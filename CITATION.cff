@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use DashBench, please cite the paper below."
+title: "Evaluating Video LLMs' Understanding of Corner Cases in Autonomous Driving"
+type: article
+license: MIT
+url: "https://arxiv.org/abs/2611.16767"
+authors:
+  - family-names: Manalu
+    given-names: Gabriel
+  - family-names: Hoang
+    given-names: Minh Son
+  - family-names: Hwang
+    given-names: Hyeontaek
+  - family-names: Lee
+    given-names: Jaesung
+  - family-names: Choi
+    given-names: Hyojin
+  - family-names: Phong
+    given-names: Tran Tuan
+  - family-names: Kim
+    given-names: Seon Kwon
+  - family-names: Wazir
+    given-names: Saad
+  - family-names: Kim
+    given-names: Daeyoung
+date-released: 2026-11-12
+notes: "arXiv:2611.16767. BMVC 2026."
