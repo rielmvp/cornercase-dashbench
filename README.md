@@ -98,6 +98,81 @@ Each entry looks like this:
 }
 ```
 
+## Evaluation
+
+Run every step from the repository root, with `dataset/` prepared as above. A model's responses go through four steps:
+run the model, convert its responses into judge prompts, and judge them with DeepSeek-V3.
+
+### 1. Set up API keys
+
+```bash
+pip install -r requirements.txt
+```
+
+The scripts read your own API keys from text files in `api_key/`, which is ignored by git:
+
+| Used for | Key file |
+|---|---|
+| OpenAI models such as GPT-5 | `api_key/openai_key.txt` |
+| OpenRouter models such as Gemini-3-Flash, and the DeepSeek-V3 judge | `api_key/openrouter_key.txt` |
+
+```bash
+mkdir -p api_key
+echo "YOUR_OPENAI_API_KEY" > api_key/openai_key.txt
+echo "YOUR_OPENROUTER_API_KEY" > api_key/openrouter_key.txt
+```
+
+Use `--api-key-path` to read a key from another file. A local server (such as vLLM) needs no key.
+
+### 2. Run a model
+
+Every model is reached through an OpenAI-compatible endpoint. Use `--split ccw` for the corner-case-window split.
+
+```bash
+# GPT-5, OpenAI API
+python code/main_api.py --model gpt-5-2025-08-07 --split full
+
+# Gemini-3-Flash, through OpenRouter
+python code/main_api.py --model google/gemini-3-flash-preview --split full \
+  --openai-base-url https://openrouter.ai/api/v1 --api-key-path api_key/openrouter_key.txt
+
+# an open-source model served locally with vLLM. The 16 frames go in as one 1 fps video (needs ffmpeg)
+vllm serve Qwen/Qwen3-VL-8B-Instruct --port 8000 --limit-mm-per-prompt '{"video": 1}' --allowed-local-media-path /tmp
+python code/main_api.py --model Qwen/Qwen3-VL-8B-Instruct --split full --openai-base-url http://localhost:8000/v1
+
+# a local model without video support: send the frames as images instead
+vllm serve <model> --port 8000 --limit-mm-per-prompt '{"image": 16}'
+python code/main_api.py --model <model> --split full --openai-base-url http://localhost:8000/v1 --input-mode images
+```
+
+- `--input-mode`: `auto` (default) sends a video to a local server and images to OpenAI and OpenRouter; or choose `images` / `video`
+- `--question-types`: `all`, or a list such as `Q1,Q3`
+- `--test`: run only the first 30 entries
+- `--dry-run`: check the input files and build the requests without calling any model
+- `--guided-json`, `--disable-thinking`, `--system-in-user`: options for some vLLM models
+
+Responses are saved to `results/<split>/<model>/<split>_<model>.json`. Running the same command again resumes any
+missing entries. The scripts reach models through OpenAI-compatible endpoints, so a model that is not served by such an
+endpoint needs its own inference code and is not part of this repository.
+
+### 3. Convert the responses into judge prompts
+
+```bash
+python code/convert_to_judging_format.py results/full/gpt-5-2025-08-07/full_gpt-5-2025-08-07.json
+```
+
+For Q1, Q2, Q3 and Q5 the whole response is judged. For Q4 the JSON answer is parsed: its `reasoning` is judged (Q4R) and
+`unusual_or_dangerous_event_detected` is kept for the detection score (Q4TF). The judge prompt is the one in the paper.
+
+### 4. Judge the responses with DeepSeek-V3
+
+```bash
+python code/judge_api.py results/full/gpt-5-2025-08-07/for_judging/
+```
+
+The judge replies are saved to `results/full/gpt-5-2025-08-07/judge/`. Accuracy is the share of entries whose
+`format_classification` is `starts_yes`. Use `--dry-run` to see what would be judged without calling the judge.
+
 ## Citation
 
 ```bibtex
