@@ -10,6 +10,7 @@
 
 [![Paper](https://img.shields.io/badge/Paper-arXiv_2611.16767-b31b1b.svg)](https://arxiv.org/abs/2611.16767)
 [![Project Page](https://img.shields.io/badge/Project_Page-cornercase--dashbench.github.io-blue.svg)](https://cornercase-dashbench.github.io)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Hugging%20Face-Dataset-yellow.svg)](https://huggingface.co/datasets/gabrieldavin23/cornercase-dashbench)
 [![Code License](https://img.shields.io/badge/Code_License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -57,6 +58,45 @@ Accuracy (%) of the top 10 of 25 Video LLMs on all 1,709 clips, ranked by Avg. Q
 | InternVL3.5 (38B) | 12.64 | 13.22 | 8.66 | 16.44 | 12.93 | 12.78 | 77.65 |
 | Tarsier2 (7B) | 13.28 | 13.11 | 11.70 | – | 12.35 | 12.61 | – |
 | MiniCPM4.5 (8B) | 13.34 | 11.18 | 6.38 | 17.27 | 13.53 | 12.34 | 87.53 |
+
+## Dataset
+
+DashBench is hosted on [Hugging Face](https://huggingface.co/datasets/gabrieldavin23/cornercase-dashbench). It has two splits:
+`full` (1,709 clips) and `ccw` (823 clips whose 16 frames are sampled inside the corner-case window). The text of each
+clip is shown in the dataset viewer, and the frames are stored as Parquet files next to it.
+
+`code/prepare_dataset.py` downloads the dataset and arranges it in the layout the evaluation code reads:
+
+```bash
+pip install -r requirements.txt
+python code/prepare_dataset.py                 # both splits, about 6 GB
+python code/prepare_dataset.py --split ccw     # only the corner-case-window split
+```
+
+```
+dataset/
+├── full_data.json         8,545 entries: 1,709 clips × 5 prompts
+├── ccw_data.json          4,115 entries: 823 clips × 5 prompts
+├── MMAU/{sampled_frames_16,corner_case_window}/<clip>/images/*.jpg
+└── RoadSocial/{sampled_frames_16,corner_case_window}/<clip>/images/*.jpg
+```
+
+Each entry looks like this:
+
+```json
+{
+  "ID": "MMAU_000848_n_frames_16_Q1",
+  "dataset": "MMAU",
+  "source_id": "000848",
+  "image_folder": "dataset/MMAU/sampled_frames_16/000848/images",
+  "n_frames": 16,
+  "image_filenames": ["000001.jpg", "000004.jpg", "..."],
+  "prompt": "What is unusual in this sequence of frames?",
+  "prompt_type": "Q1",
+  "ground_truth": "...",
+  "category": "car scratches truck"
+}
+```
 
 ## Citation
 
